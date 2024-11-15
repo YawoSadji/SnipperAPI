@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import User, Snippet
+from .models import Snippet
 
 class SnippetSerializer(serializers.ModelSerializer):
     class Meta:
