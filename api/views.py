@@ -1,38 +1,85 @@
 from rest_framework.response import Response
 from rest_framework.decorators import api_view
 from snippets.models import Snippet
-from .serializers import SnippetSerializer
+from .serializers import SnippetSerializer, UserSerializer, LoginSerializer
 from rest_framework import status
+from django.contrib.auth import authenticate, login as django_login
+from cryptography.fernet import Fernet
+from django.contrib.auth.hashers import make_password
 
 
 
-@api_view(['GET', 'POST'])
-def get_or_post_snippet(request):
-    if request.method == 'GET':
-        snippets = Snippet.objects.all()
-        serializer = SnippetSerializer(snippets, many=True)
-        return Response(serializer.data)
-    elif request.method == 'POST':
-        serializer = SnippetSerializer(data=request.data)
-        if serializer.is_valid():
-            serializer.save()
-        return Response(serializer.data, status=status.HTTP_201_CREATED)
+@api_view(['POST'])
+def register(request):
+    serializer = UserSerializer(data = request.data)
+    if serializer.is_valid():
+        password = make_password(serializer.validated_data['password'])
+        serializer.validated_data['password'] = password
+        serializer.save()
+        return Response({'message':'User registered'}, status=status.HTTP_201_CREATED)
+    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+@api_view(['POST'])
+def login(request):
+    serializer = LoginSerializer(data = request.data)
+    if serializer.is_valid():
+        email = serializer.validated_data['email']
+        password = serializer.validated_data['password']
+        user = authenticate(email=email, password=password)
+        if user is not None:
+            django_login(request._request, user)
+            return Response({'message': 'Login successful'}, status=status.HTTP_200_OK)
+        return Response({'error':'Invalid email or password'}, status=status.HTTP_401_UNAUTHORIZED)
+    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+@api_view(['POST'])
+def post_snippet(request):
+    user = request.user
+    if user.is_authenticated:
+        key = Fernet.generate_key()
+        f = Fernet(key)
+        code = f.encrypt(request.data['code'].encode('utf-8')).decode('utf-8')
+        snippet = Snippet.objects.create(user=user, language=request.data['language'], code = code)
+        return Response({'message': 'Snippet created successfully'}, status=status.HTTP_201_CREATED)
+    return Response({'error':'You are not authenticated'}, status=status.HTTP_401_UNAUTHORIZED)
+
+@api_view(['GET'])
+def get_all_snippets(request):
+    user = request.user
+    if user.is_authenticated:
+        snippets = Snippet.objects.filter(user=user)
+        decrypted_snippets = []
+        for snippet in snippets:
+            key = Fernet.generate_key()
+            f = Fernet(key)
+            code = f.decrypt(snippet.code.encode('utf-8')).decode('utf-8')
+            decrypted_snippet = {
+                'id': snippet.id,
+                'language': snippet.language,
+                'code': code
+            }
+            decrypted_snippets.append(decrypted_snippet)
+        serializer = SnippetSerializer(decrypted_snippets, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+    return Response({'error':'You are not authenticated'}, status=status.HTTP_401_UNAUTHORIZED)
+
 
 @api_view(['GET'])
 def get_single_snippet(request, id):
-    try:
-        snippet = Snippet.objects.get(pk=id)
-    except Snippet.DoesNotExist:
-        return Response(status=status.HTTP_404_NOT_FOUND)
-    serializer = SnippetSerializer(snippet)
-    return Response(serializer.data)
-
-@api_view(['GET'])
-def get_snippet_by_language(request):
-    language = request.query_params.get('language', None)
-    if language:
-        snippets = Snippet.objects.filter(language__iexact=language)
-    else:
-        snippets = Snippet.objects.all()
-    serializer = SnippetSerializer(snippets, many=True)
-    return Response(serializer.data)
+    user = request.user
+    if user.is_authenticated:
+        try:
+            snippet = Snippet.objects.get(pk=id, user=user)
+        except Snippet.DoesNotExist:
+            return Response({'error':'Snippet not found'}, status=status.HTTP_404_NOT_FOUND)
+        key = Fernet.generate_key
+        f = Fernet(key)
+        code = f.decrypt(snippet.code.encode('utf-8')).decode('utf-8')
+        decrypted_snippet = {
+                'id': snippet.id,
+                'language': snippet.language,
+                'code': code
+            }
+        serializer = SnippetSerializer(decrypted_snippet)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+    return Response({'error':'You are not authenticated'}, status=status.HTTP_401_UNAUTHORIZED)
