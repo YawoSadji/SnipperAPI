@@ -1,7 +1,9 @@
 from django.db import models
 from django.contrib.auth.models import AbstractBaseUser, BaseUserManager, PermissionsMixin
 from cryptography.fernet import Fernet
+from myapi import settings
 # Create your models here.
+
 
 class UserManager(BaseUserManager):
     def create_user(self, email, password=None, **extra_fields):
@@ -51,6 +53,5 @@ class Snippet(models.Model):
         return f"{self.language} - {self.code}"
 
     def decrypt_code(self):
-        key = Fernet.generate_key()
-        f = Fernet(key)
+        f = Fernet(settings.key)
         return f.decrypt(self.code.encode('utf-8')).decode('utf-8')
