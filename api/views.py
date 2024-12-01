@@ -3,7 +3,7 @@ from rest_framework.decorators import api_view
 from snippets.models import Snippet
 from .serializers import SnippetSerializer, UserSerializer, LoginSerializer
 from rest_framework import status
-from django.contrib.auth import authenticate, login as django_login
+from django.contrib.auth import authenticate, login as django_login, logout
 from cryptography.fernet import Fernet
 from django.contrib.auth.hashers import make_password
 from myapi import settings
@@ -30,6 +30,15 @@ def login(request):
             return Response({'message': 'Login successful'}, status=status.HTTP_200_OK)
         return Response({'error':'Invalid email or password'}, status=status.HTTP_401_UNAUTHORIZED)
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+@api_view(['POST'])
+def logout_user(request):
+    user = request.user
+    if user.is_authenticated:
+        logout(request)
+        return Response({'message': 'You are successfully logged out'}, status=status.HTTP_200_OK)
+    return Response({'error':'You are not logged in'}, status=status.HTTP_401_UNAUTHORIZED)
+
 
 @api_view(['POST'])
 def post_snippet(request):
