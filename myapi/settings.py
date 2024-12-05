@@ -21,6 +21,10 @@ load_dotenv(dotenv_path=BASE_DIR / '.env')
 
 key = os.getenv('key').encode()
 
+AUTH0_DOMAIN = os.getenv("AUTH0_DOMAIN")
+AUTH0_CLIENT_ID = os.getenv("AUTH0_CLIENT_ID")
+AUTH0_CLIENT_SECRET = os.getenv("AUTH0_CLIENT_SECRET")
+
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.1/howto/deployment/checklist/
 
@@ -109,6 +113,7 @@ AUTH_PASSWORD_VALIDATORS = [
 AUTH_USER_MODEL = 'snippets.User'
 
 AUTHENTICATION_BACKENDS = [
+    'auth0.authentication.Auth0Backend',
     'django.contrib.auth.backends.ModelBackend',
 ]
 REST_FRAMEWORK = {
