@@ -1,5 +1,6 @@
 from django.urls import path
 from . import views
+from snippets import sviews
 from rest_framework_simplejwt.views import (
     TokenObtainPairView,
     TokenRefreshView,
@@ -9,10 +10,10 @@ from rest_framework_simplejwt.views import (
 
 urlpatterns = [
     path('register', views.register),
-    path('login', views.login),
-    path('logout', views.logout_user),
+    path('login', views.login_user, name='login'),
+    path('logout', views.logout_user, name='logout'),
     path('callback', views.callback, name='callback'),
-    path('index', views.index),
+    path('homepage', sviews.home, name='homepage'),
     path('add', views.post_snippet),
     path('<int:id>', views.get_single_snippet),
     path('', views.get_all_snippets),

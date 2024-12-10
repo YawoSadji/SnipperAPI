@@ -27,14 +27,14 @@ oauth.register(
 )
 
 @api_view(['GET'])
-def login(request):
+def login_user(request):
     return oauth.auth0.authorize_redirect(request, request.build_absolute_uri(reverse('callback')))
 
 @api_view(['GET'])
 def callback(request):
     token = oauth.auth0.authorize_access_token(request)
     request.session['user'] = token
-    return redirect(reverse('index'))
+    return redirect(reverse('homepage'))
 
 @api_view(['GET', 'POST'])
 def logout_user(request):
@@ -43,7 +43,7 @@ def logout_user(request):
         f"https://{settings.AUTH0_DOMAIN}/v2/logout?"
         + urlencode(
             {
-                'returnTo': request.build_absolute_uri(reverse('index')),
+                'returnTo': request.build_absolute_uri(reverse('homepage')),
                 'client_id': settings.AUTH0_CLIENT_ID,
             },
             quote_via=quote_plus,
@@ -53,7 +53,7 @@ def logout_user(request):
 def index(request):
     return render(
         request,
-        'index.html',
+        'homepage.html',
         context={
             'session': request.session.get('user'),
             'pretty': json.dumps(request.session.get('user'), indent=4),
