@@ -7,7 +7,8 @@ from django.contrib.auth import authenticate, login as django_login, logout
 from cryptography.fernet import Fernet
 from django.contrib.auth.hashers import make_password
 from myapi import settings
-
+from rest_framework.decorators import permission_classes
+from rest_framework.permissions import IsAuthenticated
 #.........................................................................................................
 import json
 from authlib.integrations.django_client import OAuth
@@ -15,57 +16,49 @@ from django.shortcuts import redirect, render
 from django.urls import reverse
 from urllib.parse import quote_plus, urlencode
 
-
-
 oauth = OAuth()
 
 oauth.register(
-    "auth0",
+    'auth0',
     client_id=settings.AUTH0_CLIENT_ID,
     client_secret=settings.AUTH0_CLIENT_SECRET,
-    client_kwargs={
-        "scope": "openid profile email",
-    },
     server_metadata_url=f"https://{settings.AUTH0_DOMAIN}/.well-known/openid-configuration",
+    client_kwargs={'scope': 'openid profile email'},
 )
 
-
+@api_view(['GET'])
 def login(request):
-    return oauth.auth0.authorize_redirect(
-        request, request.build_absolute_uri(reverse("callback"))
-    )
+    return oauth.auth0.authorize_redirect(request, request.build_absolute_uri(reverse('callback')))
 
-
+@api_view(['GET'])
 def callback(request):
     token = oauth.auth0.authorize_access_token(request)
-    request.session["user"] = token
-    return redirect(request.build_absolute_uri(reverse("index")))
+    request.session['user'] = token
+    return redirect(reverse('index'))
 
-
+@api_view(['GET', 'POST'])
 def logout_user(request):
     request.session.clear()
-
     return redirect(
         f"https://{settings.AUTH0_DOMAIN}/v2/logout?"
         + urlencode(
             {
-                "returnTo": request.build_absolute_uri(reverse("index")),
-                "client_id": settings.AUTH0_CLIENT_ID,
+                'returnTo': request.build_absolute_uri(reverse('index')),
+                'client_id': settings.AUTH0_CLIENT_ID,
             },
             quote_via=quote_plus,
-        ),
+        )
     )
 
 def index(request):
     return render(
         request,
-        "index.html",
+        'index.html',
         context={
-            "session": request.session.get("user"),
-            "pretty": json.dumps(request.session.get("user"), indent=4),
+            'session': request.session.get('user'),
+            'pretty': json.dumps(request.session.get('user'), indent=4),
         },
     )
-
 
 
 

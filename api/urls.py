@@ -11,7 +11,7 @@ urlpatterns = [
     path('register', views.register),
     path('login', views.login),
     path('logout', views.logout_user),
-    # path('callback', views.callback),
+    path('callback', views.callback, name='callback'),
     path('index', views.index),
     path('add', views.post_snippet),
     path('<int:id>', views.get_single_snippet),
