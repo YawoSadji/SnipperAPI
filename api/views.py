@@ -37,6 +37,7 @@ def callback(request):
     return redirect(reverse('homepage'))
 
 @api_view(['GET', 'POST'])
+@permission_classes([IsAuthenticated])
 def logout_user(request):
     request.session.clear()
     return redirect(
@@ -101,6 +102,7 @@ def register(request):
 
 
 @api_view(['POST'])
+@permission_classes([IsAuthenticated])
 def post_snippet(request):
     user = request.user
     if not user.is_authenticated:
@@ -121,6 +123,7 @@ def post_snippet(request):
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 @api_view(['GET'])
+@permission_classes([IsAuthenticated])
 def get_all_snippets(request):
     user = request.user
     if user.is_authenticated:
@@ -141,6 +144,7 @@ def get_all_snippets(request):
 
 
 @api_view(['GET'])
+@permission_classes([IsAuthenticated])
 def get_single_snippet(request, id):
     user = request.user
     if user.is_authenticated:
